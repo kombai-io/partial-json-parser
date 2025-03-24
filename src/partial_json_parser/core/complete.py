@@ -50,7 +50,7 @@ def complete_any(json_string: str, allow: Allow, is_top_level=False) -> Complete
         return complete_arr(json_string, allow)
 
     if char == "{":
-        return complete_obj(json_string, allow)
+        return complete_obj(json_string, allow, is_top_level)
 
     if json_string.startswith("null"):
         return (4, True)
@@ -171,10 +171,11 @@ def complete_arr(json_string: str, allow: Allow) -> CompleteResult:
         return (i, "]") if ARR in allow else False
 
 
-def complete_obj(json_string: str, allow: Allow) -> CompleteResult:
+def complete_obj(json_string: str, allow: Allow, is_top_level: bool) -> CompleteResult:
     assert json_string[0] == "{"
     i = j = 1
 
+    complete = OBJ in allow or is_top_level
     try:
         while True:
             j = skip_blank(json_string, j)
@@ -186,7 +187,7 @@ def complete_obj(json_string: str, allow: Allow) -> CompleteResult:
             if result and result[1] is True:  # complete
                 j += result[0]
             else:  # incomplete
-                return (i, "}") if OBJ in allow else False
+                return (i, "}") if complete else False
 
             j = skip_blank(json_string, j)
 
@@ -198,11 +199,11 @@ def complete_obj(json_string: str, allow: Allow) -> CompleteResult:
 
             result = complete_any(json_string[j:], allow)
             if result is False:  # incomplete
-                return (i, "}") if OBJ in allow else False
+                return (i, "}") if complete else False
             if result[1] is True:  # complete
                 i = j = j + result[0]
             else:  # incomplete
-                return (j + result[0], result[1] + "}") if OBJ in allow else False
+                return (j + result[0], result[1] + "}") if complete else False
 
             j = skip_blank(json_string, j)
 
